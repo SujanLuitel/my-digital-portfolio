@@ -10,19 +10,18 @@ console.log("Loading database configuration...")
  */
 function parseDatabaseUrl(url: string) {
   try {
-    // Format: postgres://user:password@host:port/database
-    const regex = /postgres:\/\/([^:]+):([^@]+)@([^:]+):?(\d*)\/([^?]+)(\?.*)?/;
-    const match = url.match(regex);
-    
-    if (!match) {
-      throw new Error("Invalid PostgreSQL connection string format");
-    }
-    
-    const [, user, password, host, , database, queryString] = match;
-    
-    // Check if SSL is required from query string
-    const sslRequired = queryString?.includes("sslmode=require");
-    
+    // Use Node's URL parser which accepts both 'postgres://' and 'postgresql://'
+    const parsed = new URL(url);
+
+    const user = decodeURIComponent(parsed.username || "");
+    const password = decodeURIComponent(parsed.password || "");
+    const host = parsed.hostname;
+    const database = parsed.pathname ? parsed.pathname.replace(/^\//, "") : "";
+
+    // Determine SSL requirement from query params like ?sslmode=require
+    const sslParam = parsed.searchParams.get("sslmode") || parsed.searchParams.get("ssl");
+    const sslRequired = sslParam === "require";
+
     return {
       host,
       user,
